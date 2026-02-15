@@ -13,4 +13,7 @@ export class SuperAdmin {
 
   @Column({ default: 0 })
   loginFailedAttempts: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lockedUntil: Date;
 }
