@@ -9,11 +9,11 @@ export class SuperAdmin {
   password: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastLoginTime: Date;
+  lastLoginTime: Date | null;
 
   @Column({ default: 0 })
   loginFailedAttempts: number;
 
   @Column({ type: 'timestamp', nullable: true })
-  lockedUntil: Date;
+  lockedUntil: Date | null;
 }
