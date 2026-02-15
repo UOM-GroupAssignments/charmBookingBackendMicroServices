@@ -1,7 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
-import { getConfig, loadAllSecrets } from '@charmbooking/common';
+import {
+  getConfig,
+  loadAllSecrets,
+  initializeEncryptionKey,
+} from '@charmbooking/common';
 import * as fs from 'fs';
 
 async function bootstrap() {
@@ -9,6 +13,8 @@ async function bootstrap() {
   try {
     await loadAllSecrets();
     console.log('✓ Secrets loaded successfully');
+    initializeEncryptionKey();
+    console.log('✓ Field encryption initialized');
   } catch (error) {
     console.error('Failed to load secrets:', error);
     process.exit(1);

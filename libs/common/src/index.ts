@@ -9,6 +9,13 @@ export {
   isKeyVaultInitialized,
   getLoadedSecretNames,
 } from './keyVault';
+export {
+  initializeEncryptionKey,
+  encryptField,
+  decryptField,
+  encryptionTransformer,
+  generateEncryptionKey,
+} from './encryption/fieldEncryption';
 export { GenericError, GenericErrorResponse } from './errors/genericError';
 export { TimeString } from './helpers/timeString';
 export { calcLatLongDistance } from './helpers/distanceHelpers';
