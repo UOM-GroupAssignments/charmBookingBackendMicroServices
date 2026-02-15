@@ -31,8 +31,8 @@ type DatabaseConfig = {
 
 type ServiceConfig = {
   apiGateway: { port: number };
-  booking: { port: number };
-  user: { port: number };
+  booking: { host: string; port: number };
+  user: { host: string; port: number };
 };
 
 type JwtConfig = {
@@ -191,9 +191,11 @@ export const getConfig = (validate: boolean = true): AppConfig => {
         port: parseInt(getSecret('API_GATEWAY_PORT') || '3000', 10),
       },
       booking: {
+        host: getSecret('BOOKING_SERVICE_HOST') || 'localhost',
         port: parseInt(getSecret('BOOKING_SERVICE_PORT') || '3001', 10),
       },
       user: {
+        host: getSecret('USER_SERVICE_HOST') || 'localhost',
         port: parseInt(getSecret('USER_SERVICE_PORT') || '3002', 10),
       },
     },

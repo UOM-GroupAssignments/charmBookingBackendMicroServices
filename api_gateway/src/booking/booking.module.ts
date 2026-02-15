@@ -25,7 +25,7 @@ interface TcpOptions {
 }
 
 const bookingServiceOptions: TcpOptions = {
-  host: 'localhost',
+  host: config.services.booking.host,
   port: config.services.booking.port,
 };
 

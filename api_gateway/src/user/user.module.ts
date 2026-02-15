@@ -21,7 +21,7 @@ interface TcpOptions {
 }
 
 const userServiceOptions: TcpOptions = {
-  host: 'localhost',
+  host: config.services.user.host,
   port: config.services.user.port,
 };
 
