@@ -8,11 +8,13 @@ import { JwtModule } from '@nestjs/jwt/dist/jwt.module';
 import { getConfig } from '@charmbooking/common';
 import { SalonWorkerController } from './salon_worker.controller';
 import { PaymentsController } from './payment.controller';
+import { FileUploadModule } from '../file-upload/file-upload.module';
 
 const config = getConfig();
 
 @Module({
   imports: [
+    FileUploadModule,
     ClientsModule.register([
       {
         name: 'BOOKING_SERVICE',

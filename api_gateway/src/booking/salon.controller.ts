@@ -14,6 +14,7 @@ import {
   Query,
   UploadedFiles,
   UseInterceptors,
+  Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -24,11 +25,19 @@ import { firstValueFrom } from 'rxjs';
 import {
   multerConfig,
   salonDocumentsMulterConfig,
+  FileTypeValidatorService,
+  FileCategory,
 } from 'src/file-upload/multer.config';
+import { FileValidationInterceptor } from 'src/file-upload/file-validation.interceptor';
 
 @Controller('salon')
 export class SalonController {
-  constructor(@Inject('BOOKING_SERVICE') private client: ClientProxy) {}
+  private readonly logger = new Logger(SalonController.name);
+
+  constructor(
+    @Inject('BOOKING_SERVICE') private client: ClientProxy,
+    private readonly fileTypeValidator: FileTypeValidatorService,
+  ) {}
 
   @Get('getSalons')
   async getSalons(): Promise<any> {
@@ -63,11 +72,21 @@ export class SalonController {
   }
 
   @Post('registerSalon')
-  @UseInterceptors(FilesInterceptor('salonImages', 10, multerConfig))
+  @UseInterceptors(
+    FilesInterceptor('salonImages', 10, multerConfig),
+    FileValidationInterceptor,
+  )
   async registerSalon(
     @Body() salonData: any,
     @UploadedFiles() images: Array<Express.Multer.File>,
   ): Promise<any> {
+    this.logger.log(`Registering salon with ${images?.length || 0} images`);
+    
+    // Additional validation - ensure images are actually provided for salon registration
+    if (!images || images.length === 0) {
+      this.logger.warn('Salon registration attempted without images');
+    }
+
     const pattern = { cmd: 'register_salon' };
     return firstValueFrom(
       this.client.send<any>(pattern, { salonData, images }),
@@ -145,23 +164,24 @@ export class SalonController {
       ],
       salonDocumentsMulterConfig,
     ),
+    FileValidationInterceptor,
   )
   async submitSalonDetails(
     @Body()
     request: SalonSubmitDetailsRequestDto<Express.Multer.File>,
     @UploadedFiles() documents: { [key: string]: Express.Multer.File[] },
   ): Promise<any> {
+    this.logger.log(`Submitting salon details with documents: ${Object.keys(documents).join(', ')}`);
+    
     const pattern = { cmd: 'submit_salon_details' };
     const singleFiles: { [key: string]: Express.Multer.File | undefined } = {};
     Object.keys(documents).forEach((key) => {
       singleFiles[key] = documents[key]?.[0];
     });
     const { salonId, ...details } = request;
-    console.log('Submitting salon details with data:', {
-      salonId,
-      details,
-      documents: { ...singleFiles },
-    });
+    
+    this.logger.debug('Submitting salon details with validated documents');
+    
     return firstValueFrom(
       this.client.send<any>(pattern, {
         salonId,

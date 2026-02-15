@@ -78,6 +78,16 @@ export class SuperAdminService {
     return salonDetails;
   }
 
+  async getDocumentById(documentId: string): Promise<SalonDocuments> {
+    const document = await this.salonDocumentsRepository.findOne({
+      where: { id: documentId },
+    });
+    if (!document) {
+      throw new GenericError('Document not found', 404);
+    }
+    return document;
+  }
+
   async verifySalon(salonId: string): Promise<{ message: string }> {
     const salon = await this.salonRepository.findOne({
       where: { id: salonId },

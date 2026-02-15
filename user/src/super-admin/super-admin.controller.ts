@@ -36,4 +36,9 @@ export class SuperAdminController {
   async failVerification(salonId: string): Promise<any> {
     return this.superAdminService.failVerification(salonId);
   }
+
+  @MessagePattern('get_document_by_id')
+  async getDocumentById(documentId: string): Promise<any> {
+    return this.superAdminService.getDocumentById(documentId);
+  }
 }
