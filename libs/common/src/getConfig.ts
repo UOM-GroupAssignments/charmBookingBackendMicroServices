@@ -59,17 +59,22 @@ type AppConfig = {
 /**
  * Validate that all required configuration values are present
  * Throws an error with details about missing values
+ * Implements Fail-Fast validation to prevent security vulnerabilities
  */
 const validateConfig = (config: AppConfig): void => {
   const missing: string[] = [];
+  const critical: string[] = [];
 
   // Check database config
   if (!config.database.host) missing.push('DB_HOST');
   if (!config.database.username) missing.push('DB_USERNAME');
   if (!config.database.password) missing.push('DB_PASSWORD');
 
-  // Check JWT config
-  if (!config.jwt.secret) missing.push('JWT_SECRET');
+  // Check JWT config - CRITICAL for security
+  if (!config.jwt.secret) {
+    missing.push('JWT_SECRET');
+    critical.push('JWT_SECRET');
+  }
   if (!config.jwt.expiration) missing.push('JWT_EXPIRATION');
 
   // Check PayHere config
@@ -87,6 +92,15 @@ const validateConfig = (config: AppConfig): void => {
       '║  CONFIGURATION ERROR: Missing Required Secrets                 ║',
       '╚════════════════════════════════════════════════════════════════╝',
       '',
+      ...(critical.length > 0
+        ? [
+            '⚠️  CRITICAL SECURITY SECRETS MISSING:',
+            ...critical.map(
+              (key) => `  ✗ ${key} (REQUIRED FOR AUTHENTICATION)`,
+            ),
+            '',
+          ]
+        : []),
       'The following required configuration values are missing:',
       ...missing.map((key) => `  ✗ ${key}`),
       '',
@@ -99,6 +113,22 @@ const validateConfig = (config: AppConfig): void => {
     ].join('\n');
 
     throw new Error(errorMessage);
+  }
+
+  // Additional validation: JWT secret must be strong enough
+  if (config.jwt.secret.length < 32) {
+    throw new Error(
+      '╔════════════════════════════════════════════════════════════════╗\n' +
+        '║  SECURITY ERROR: Weak JWT Secret                               ║\n' +
+        '╚════════════════════════════════════════════════════════════════╝\n\n' +
+        '⚠️  JWT_SECRET is too weak!\n\n' +
+        `Current length: ${config.jwt.secret.length} characters\n` +
+        'Required length: At least 32 characters\n\n' +
+        'A weak JWT secret allows attackers to forge authentication tokens,\n' +
+        'leading to complete authentication bypass.\n\n' +
+        'Please generate a strong secret using:\n' +
+        "  node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"\n",
+    );
   }
 };
 
