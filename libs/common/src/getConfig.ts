@@ -49,11 +49,19 @@ type PayHereConfig = {
   backendUrl: string;
 };
 
+type TlsConfig = {
+  enabled: boolean;
+  certPath: string;
+  keyPath: string;
+  caPath: string;
+};
+
 type AppConfig = {
   database: DatabaseConfig;
   services: ServiceConfig;
   jwt: JwtConfig;
   payHere: PayHereConfig;
+  tls: TlsConfig;
 };
 
 /**
@@ -130,6 +138,32 @@ const validateConfig = (config: AppConfig): void => {
         "  node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"\n",
     );
   }
+
+  // Validate TLS certificates if TLS is enabled
+  if (config.tls.enabled) {
+    const tlsMissing: string[] = [];
+
+    if (!fs.existsSync(config.tls.certPath)) {
+      tlsMissing.push(`TLS Certificate not found: ${config.tls.certPath}`);
+    }
+    if (!fs.existsSync(config.tls.keyPath)) {
+      tlsMissing.push(`TLS Key not found: ${config.tls.keyPath}`);
+    }
+    if (!fs.existsSync(config.tls.caPath)) {
+      tlsMissing.push(`TLS CA Certificate not found: ${config.tls.caPath}`);
+    }
+
+    if (tlsMissing.length > 0) {
+      throw new Error(
+        '╔════════════════════════════════════════════════════════════════╗\n' +
+          '║  SECURITY ERROR: TLS Certificates Missing                     ║\n' +
+          '╚════════════════════════════════════════════════════════════════╝\n\n' +
+          '⚠️  TLS is enabled but certificates are missing!\n\n' +
+          tlsMissing.map((msg) => `  ✗ ${msg}`).join('\n') +
+          '\n\nPlease generate TLS certificates or set TLS_ENABLED=false\n',
+      );
+    }
+  }
 };
 
 /**
@@ -141,6 +175,10 @@ const validateConfig = (config: AppConfig): void => {
  * @throws Error if validation is enabled and required secrets are missing
  */
 export const getConfig = (validate: boolean = true): AppConfig => {
+  // Determine certificate paths
+  const certBasePath = path.resolve(__dirname, '../../../cert');
+  const tlsEnabled = getSecret('TLS_ENABLED') === 'true';
+
   const appConfig: AppConfig = {
     database: {
       host: getSecret('DB_HOST') || '',
@@ -170,6 +208,12 @@ export const getConfig = (validate: boolean = true): AppConfig => {
       appSecret: getSecret('PH_APP_SECRET') || '',
       frontendUrl: getSecret('FRONTEND_URL') || '',
       backendUrl: getSecret('BACKEND_URL') || '',
+    },
+    tls: {
+      enabled: tlsEnabled,
+      certPath: path.join(certBasePath, 'service-cert.pem'),
+      keyPath: path.join(certBasePath, 'service-key.pem'),
+      caPath: path.join(certBasePath, 'ca-cert.pem'),
     },
   };
 

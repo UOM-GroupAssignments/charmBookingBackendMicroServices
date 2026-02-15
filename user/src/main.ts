@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { getConfig, loadAllSecrets } from '@charmbooking/common';
+import * as fs from 'fs';
 
 async function bootstrap() {
   // Load secrets from Azure Key Vault before initializing the application
@@ -16,17 +17,38 @@ async function bootstrap() {
   // Get configuration (will validate that all required secrets are present)
   const config = getConfig();
 
+  // Prepare microservice options
+  const microserviceOptions: MicroserviceOptions = {
+    transport: Transport.TCP,
+    options: {
+      host: 'localhost',
+      port: config.services.user.port,
+    },
+  };
+
+  // Add TLS configuration if enabled
+  if (config.tls.enabled) {
+    microserviceOptions.options = {
+      ...microserviceOptions.options,
+      tlsOptions: {
+        key: fs.readFileSync(config.tls.keyPath),
+        cert: fs.readFileSync(config.tls.certPath),
+        ca: fs.readFileSync(config.tls.caPath),
+        requestCert: true,
+        rejectUnauthorized: true,
+      },
+    };
+    console.log('✓ TLS enabled for User service');
+  }
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
-    {
-      transport: Transport.TCP,
-      options: {
-        host: 'localhost',
-        port: config.services.user.port,
-      },
-    },
+    microserviceOptions,
   );
   await app.listen();
   console.log(`✓ User service running on port ${config.services.user.port}`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Failed to start User service:', err);
+  process.exit(1);
+});

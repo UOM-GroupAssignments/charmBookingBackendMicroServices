@@ -21,3 +21,8 @@ coverage
 db/data
 .env
 .env.test
+
+cert/*.pem
+*.key
+*.csr
+*.srl
