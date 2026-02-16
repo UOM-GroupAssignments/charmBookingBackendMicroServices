@@ -3,6 +3,7 @@ import { SalonController } from './salon.controller';
 import { SalonService } from './salon.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
+  ConfigService,
   Salon,
   SalonAdmin,
   SalonDetails,
@@ -12,12 +13,8 @@ import {
   SalonWeeklyHours,
 } from '@charmbooking/common';
 import { JwtModule } from '@nestjs/jwt/dist/jwt.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { getConfig } from '@charmbooking/common';
 import { BookingModule } from '../booking/booking.module';
 import { SalonVerifiedRepository } from './salon_verified.repository';
-
-const config = getConfig();
 @Module({
   imports: [
     BookingModule,
@@ -31,11 +28,10 @@ const config = getConfig();
       SalonDocuments,
     ]),
     JwtModule.registerAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: () => ({
-        secret: config.jwt.secret,
-        signOptions: { expiresIn: config.jwt.expiration },
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.jwt.secret,
+        signOptions: { expiresIn: configService.jwt.expiration },
       }),
     }),
   ],

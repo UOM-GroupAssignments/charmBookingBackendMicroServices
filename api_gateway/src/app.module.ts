@@ -5,9 +5,11 @@ import { BookingModule } from './booking/booking.module';
 import { UserModule } from './user/user.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ConfigModule } from '@charmbooking/common';
 
 @Module({
   imports: [
+    ConfigModule,
     BookingModule,
     UserModule,
     ServeStaticModule.forRoot({

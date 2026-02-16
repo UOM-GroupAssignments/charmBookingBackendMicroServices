@@ -6,18 +6,19 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { getConfig, UserRole } from '@charmbooking/common';
+import { ConfigService, UserRole } from '@charmbooking/common';
 import {
   SalonAdminPayload,
   CustomerPayload,
   SuperAdminPayload,
 } from './auth.type';
 
-const config = getConfig();
-
 @Injectable()
 export class CustomerGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
@@ -31,7 +32,7 @@ export class CustomerGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<CustomerPayload>(
         token,
         {
-          secret: config.jwt.secret,
+          secret: this.configService.jwt.secret,
         },
       );
       if (payload.role !== UserRole.Customer) {
@@ -52,7 +53,10 @@ export class CustomerGuard implements CanActivate {
 
 @Injectable()
 export class SalonAdminGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
@@ -66,7 +70,7 @@ export class SalonAdminGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<SalonAdminPayload>(
         token,
         {
-          secret: config.jwt.secret,
+          secret: this.configService.jwt.secret,
         },
       );
       if (payload.role !== UserRole.SalonAdmin) {
@@ -74,7 +78,7 @@ export class SalonAdminGuard implements CanActivate {
       }
       request['user'] = payload;
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid or expired token');
     }
     return true;
   }
@@ -87,7 +91,10 @@ export class SalonAdminGuard implements CanActivate {
 
 @Injectable()
 export class SuperAdminGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
       .switchToHttp()
@@ -100,7 +107,7 @@ export class SuperAdminGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<SuperAdminPayload>(
         token,
         {
-          secret: config.jwt.secret,
+          secret: this.configService.jwt.secret,
         },
       );
       if (payload.role !== UserRole.SuperAdmin) {

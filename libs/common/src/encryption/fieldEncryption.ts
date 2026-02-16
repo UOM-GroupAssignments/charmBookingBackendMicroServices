@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { getRequiredSecret } from '../keyVault';
+import { ConfigService } from '../config.service';
 
 /**
  * Field-Level Encryption (FLE) utility for sensitive data
@@ -16,10 +16,16 @@ let encryptionKey: Buffer | null = null;
  * Initialize encryption key from Key Vault
  * The key should be stored in Key Vault as "FIELD_ENCRYPTION_KEY"
  * Expected format: 64 character hex string (32 bytes = 256 bits)
+ *
+ * @param configService - Optional ConfigService instance. If provided, uses injectable service; otherwise uses legacy getRequiredSecret
  */
-export const initializeEncryptionKey = (): void => {
+export const initializeEncryptionKey = (configService: ConfigService): void => {
   try {
-    const keyHex = getRequiredSecret('FIELD_ENCRYPTION_KEY');
+    const keyHex = configService.encryption.fieldEncryptionKey;
+
+    if (!keyHex) {
+      throw new Error('Encryption key not found in configuration');
+    }
 
     // Validate key format
     if (!/^[0-9a-fA-F]{64}$/.test(keyHex)) {
@@ -42,9 +48,6 @@ export const initializeEncryptionKey = (): void => {
  * Get or initialize encryption key
  */
 const getEncryptionKey = (): Buffer => {
-  if (!encryptionKey) {
-    initializeEncryptionKey();
-  }
   if (!encryptionKey) {
     throw new Error('Encryption key not initialized');
   }
