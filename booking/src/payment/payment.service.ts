@@ -161,6 +161,23 @@ export class PayHereService {
     const bookingId = order_id.split(':')[0];
     console.log('Processing payment for booking ID:', bookingId);
     const booking = await this.bookingService.findById(bookingId);
+    const existingPayment = await this.paymentDetailsRepository.findOne({
+      where: { id: payment_id },
+    });
+    if (existingPayment) {
+      console.warn(`Payment ${payment_id} already processed!`);
+      return;
+    }
+
+    // Verify payment status with PayHere API
+    const isValidPayment = await this.verifyPaymentWithPayHere(payment_id);
+    if (!isValidPayment) {
+      throw new GenericError(
+        'Payment verification failed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     if (!booking) throw new Error('Booking not found');
     let paymentStatus: PaymentStatus;
     switch (status_code) {
@@ -201,6 +218,21 @@ export class PayHereService {
     booking.payment_id = payment_id;
     booking.status = BookingStatus.CONFIRMED;
     await this.bookingService.update(booking.id, booking);
+  }
+  private async verifyPaymentWithPayHere(paymentId: string): Promise<boolean> {
+    const accessToken = await this.getPayHereAccessToken();
+    const url = `https://api.payhere.lk/merchant/v1/payments/${paymentId}`;
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }),
+      );
+      return response.data.status_code === '2';
+    } catch (err) {
+      console.error('Error verifying payment with PayHere', err);
+      return false;
+    }
   }
 
   async refundBooking(bookingId: string, reason?: string) {
