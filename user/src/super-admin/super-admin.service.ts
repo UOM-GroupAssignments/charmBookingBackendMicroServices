@@ -29,6 +29,9 @@ export class SuperAdminService {
     private jwtService: JwtService,
   ) {}
 
+  private static readonly MAX_FAILED_ATTEMPTS = 5;
+  private static readonly LOCKOUT_DURATION_MINUTES = 30;
+
   async login(
     loginSuperAdminDto: LoginSuperAdminDto,
   ): Promise<LoginSuperAdminResponseDTO> {
@@ -39,10 +42,58 @@ export class SuperAdminService {
     if (!superAdmin) {
       throw new GenericError('Super Admin not found', 404);
     }
+
+    // Check if account is temporarily locked
+    if (superAdmin.lockedUntil && superAdmin.lockedUntil > new Date()) {
+      const remainingMs = superAdmin.lockedUntil.getTime() - Date.now();
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      throw new GenericError(
+        `Account is temporarily locked. Try again in ${remainingMin} minute(s).`,
+        429,
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(password, superAdmin.password);
     if (!isPasswordValid) {
-      throw new GenericError('Invalid Credentials', 401);
+      superAdmin.loginFailedAttempts += 1;
+
+      // Lock account after reaching max failed attempts with progressive delay
+      if (
+        superAdmin.loginFailedAttempts >=
+        SuperAdminService.MAX_FAILED_ATTEMPTS
+      ) {
+        // Progressive lockout: multiply base duration by how many lockout cycles
+        const lockoutCycles = Math.floor(
+          superAdmin.loginFailedAttempts /
+            SuperAdminService.MAX_FAILED_ATTEMPTS,
+        );
+        const lockoutMinutes =
+          SuperAdminService.LOCKOUT_DURATION_MINUTES * lockoutCycles;
+        superAdmin.lockedUntil = new Date(
+          Date.now() + lockoutMinutes * 60 * 1000,
+        );
+        await this.userRepository.save(superAdmin);
+        throw new GenericError(
+          `Too many failed login attempts. Account locked for ${lockoutMinutes} minutes.`,
+          429,
+        );
+      }
+
+      await this.userRepository.save(superAdmin);
+      const remaining =
+        SuperAdminService.MAX_FAILED_ATTEMPTS -
+        superAdmin.loginFailedAttempts;
+      throw new GenericError(
+        `Invalid Credentials. ${remaining} attempt(s) remaining before lockout.`,
+        401,
+      );
     }
+
+    // Successful login — reset failed attempts and lockout
+    superAdmin.loginFailedAttempts = 0;
+    superAdmin.lockedUntil = null;
+    superAdmin.lastLoginTime = new Date();
+
     const token = this.jwtService.sign({
       username: superAdmin.username,
       role: UserRole.SuperAdmin,
