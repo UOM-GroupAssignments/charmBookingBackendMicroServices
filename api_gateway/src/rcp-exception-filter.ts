@@ -34,10 +34,16 @@ export class RpcToHttpFilter implements ExceptionFilter {
       message = err;
     }
 
+    const lockedUntil =
+      typeof err === 'object' && 'lockedUntil' in err
+        ? err.lockedUntil
+        : undefined;
+
     response.status(status).json({
       statusCode: status,
       message,
       timestamp: new Date().toISOString(),
+      ...(lockedUntil == null ? {} : { lockedUntil }),
     });
   }
 }

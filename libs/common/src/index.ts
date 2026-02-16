@@ -10,6 +10,7 @@ export {
   getLoadedSecretNames,
 } from './keyVault';
 export { GenericError, GenericErrorResponse } from './errors/genericError';
+export { AccountLockedError } from './errors/accountLockedError';
 export { TimeString } from './helpers/timeString';
 export { calcLatLongDistance } from './helpers/distanceHelpers';
 export * from './enums';
