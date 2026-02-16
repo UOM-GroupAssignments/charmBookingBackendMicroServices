@@ -1,8 +1,8 @@
 import {
   Booking,
   BookingStatus,
+  ConfigService,
   GenericError,
-  getConfig,
   PayHereNotifyDTO,
   PayHerePayload,
   PaymentDetails,
@@ -20,8 +20,6 @@ import {
 import { Repository } from 'typeorm';
 import { lastValueFrom } from 'rxjs';
 
-const config = getConfig();
-
 @Injectable()
 export class PayHereService {
   constructor(
@@ -29,6 +27,7 @@ export class PayHereService {
     @InjectRepository(PaymentDetails)
     private paymentDetailsRepository: Repository<PaymentDetails>,
     private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) {}
 
   generateMd5Hash(input: string): string {
@@ -71,10 +70,10 @@ export class PayHereService {
     if (!booking)
       throw new GenericError('Booking not found', HttpStatus.NOT_FOUND);
     const orderId = `${booking.id}:${Date.now()}`;
-    const notifyURL = `${config.payHere.backendUrl}/payments/notify`;
+    const notifyURL = `${this.configService.payHere.backendUrl}/payments/notify`;
     const user = booking.user;
-    const merchantId = config.payHere.merchantId;
-    const merchantSecret = config.payHere.merchantSecret;
+    const merchantId = this.configService.payHere.merchantId;
+    const merchantSecret = this.configService.payHere.merchantSecret;
     if (!merchantId || !merchantSecret) {
       throw new GenericError(
         'Payment configuration is missing',
@@ -138,7 +137,7 @@ export class PayHereService {
       method,
     } = body;
 
-    const merchantSecret = config.payHere.merchantSecret;
+    const merchantSecret = this.configService.payHere.merchantSecret;
     if (!merchantSecret) {
       throw new GenericError(
         'Merchant secret is missing',
@@ -247,8 +246,8 @@ export class PayHereService {
   }
 
   private validatePaymentConfiguration() {
-    const appId = config.payHere.appId;
-    const appSecret = config.payHere.appSecret;
+    const appId = this.configService.payHere.appId;
+    const appSecret = this.configService.payHere.appSecret;
 
     if (!appId || !appSecret) {
       throw new GenericError(

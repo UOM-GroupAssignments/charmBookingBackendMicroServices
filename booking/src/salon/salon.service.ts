@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   calcLatLongDistance,
-  getConfig,
   Salon,
   SalonAdmin,
   SalonImage,
@@ -18,6 +17,7 @@ import {
   SalonDocuments,
   SalonDocumentType,
   VerificationStatus,
+  ConfigService,
 } from '@charmbooking/common';
 import {
   SalonRegisterDTO,
@@ -50,6 +50,7 @@ export class SalonService {
     private readonly salonDetailsRepository: Repository<SalonDetails>,
     @InjectRepository(SalonDocuments)
     private readonly salonDocumentsRepository: Repository<SalonDocuments>,
+    private readonly configService: ConfigService,
   ) {}
 
   private async checkSalonExists(email: string): Promise<void> {
@@ -259,7 +260,7 @@ export class SalonService {
 
     // Save image URLs with salonId and salon reference
     if (images && images.length > 0) {
-      const baseUrl = `http://localhost:${getConfig().services.apiGateway.port}`;
+      const baseUrl = `http://localhost:${this.configService.services.apiGateway.port}`;
       const salonImages = images.map((image) => ({
         url: `${baseUrl}/uploads/${image.filename}`,
         salonId: savedSalon.id,
@@ -438,7 +439,7 @@ export class SalonService {
 
         // Save salon documents
         if (documents) {
-          const baseUrl = `http://localhost:${getConfig().services.apiGateway.port}`;
+          const baseUrl = `http://localhost:${this.configService.services.apiGateway.port}`;
           const documentEntries = Object.entries(documents);
           const salonDocumentsArr = documentEntries
             .filter(([, file]) => !!file)

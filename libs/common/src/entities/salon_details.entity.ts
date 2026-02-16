@@ -8,6 +8,7 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Salon } from './salon.entity';
+import { encryptionTransformer } from '../encryption/fieldEncryption';
 
 @Entity()
 export class SalonDetails {
@@ -18,13 +19,16 @@ export class SalonDetails {
   @JoinColumn({ name: 'salonId' })
   salon: Salon;
 
-  @Column({ length: 12 })
+  // Encrypted field: Owner's National Identity Card
+  @Column({ length: 512, transformer: encryptionTransformer })
   owner_nic: string;
 
-  @Column({ length: 255 })
+  // Encrypted field: Bank account holder's full name
+  @Column({ length: 512, transformer: encryptionTransformer })
   bank_account_full_name: string;
 
-  @Column({ length: 20 })
+  // Encrypted field: Bank account number
+  @Column({ length: 512, transformer: encryptionTransformer })
   bank_account_number: string;
 
   @Column({ length: 255 })

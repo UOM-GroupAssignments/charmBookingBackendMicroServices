@@ -6,11 +6,13 @@ import { UserModule } from './user/user.module';
 import { DocumentModule } from './document/document.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ConfigModule } from '@charmbooking/common';
 import { APP_FILTER } from '@nestjs/core';
 import { FileUploadExceptionFilter } from './file-upload/file-upload-exception.filter';
 
 @Module({
   imports: [
+    ConfigModule,
     BookingModule,
     UserModule,
     DocumentModule,
