@@ -1,4 +1,5 @@
 import {
+  AccountLockedError,
   GenericError,
   LoginSuperAdminDto,
   LoginSuperAdminResponseDTO,
@@ -47,9 +48,10 @@ export class SuperAdminService {
     if (superAdmin.lockedUntil && superAdmin.lockedUntil > new Date()) {
       const remainingMs = superAdmin.lockedUntil.getTime() - Date.now();
       const remainingMin = Math.ceil(remainingMs / 60000);
-      throw new GenericError(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      throw new AccountLockedError(
         `Account is temporarily locked. Try again in ${remainingMin} minute(s).`,
-        429,
+        superAdmin.lockedUntil.toISOString(),
       );
     }
 
@@ -72,9 +74,10 @@ export class SuperAdminService {
           Date.now() + lockoutMinutes * 60 * 1000,
         );
         await this.userRepository.save(superAdmin);
-        throw new GenericError(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        throw new AccountLockedError(
           `Too many failed login attempts. Account locked for ${lockoutMinutes} minutes.`,
-          429,
+          superAdmin.lockedUntil.toISOString(),
         );
       }
 
