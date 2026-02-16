@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { getConfig, loadAllSecrets } from '@charmbooking/common';
 import { RpcToHttpFilter } from './rcp-exception-filter';
 import { RpcErrorInterceptor } from './rcp-interceptor';
+import * as fs from 'fs';
 
 async function bootstrap() {
   try {
@@ -15,7 +16,14 @@ async function bootstrap() {
 
   // Get configuration (will validate that all required secrets are present)
   const config = getConfig();
-  const app = await NestFactory.create(AppModule);
+  const httpsOptions = {
+    key: fs.readFileSync('./secrets/private-key.pem'),
+    cert: fs.readFileSync('./secrets/public-certificate.pem'),
+  };
+
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions,
+  });
   app.useGlobalFilters(new RpcToHttpFilter());
   app.useGlobalInterceptors(new RpcErrorInterceptor());
   app.enableCors();
