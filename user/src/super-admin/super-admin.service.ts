@@ -40,7 +40,7 @@ export class SuperAdminService {
       where: { username },
     });
     if (!superAdmin) {
-      throw new GenericError('Super Admin not found', 404);
+      throw new GenericError('Invalid credentials.', 401);
     }
 
     // Check if account is temporarily locked
@@ -62,7 +62,6 @@ export class SuperAdminService {
         superAdmin.loginFailedAttempts >=
         SuperAdminService.MAX_FAILED_ATTEMPTS
       ) {
-        // Progressive lockout: multiply base duration by how many lockout cycles
         const lockoutCycles = Math.floor(
           superAdmin.loginFailedAttempts /
             SuperAdminService.MAX_FAILED_ATTEMPTS,
@@ -80,13 +79,7 @@ export class SuperAdminService {
       }
 
       await this.userRepository.save(superAdmin);
-      const remaining =
-        SuperAdminService.MAX_FAILED_ATTEMPTS -
-        superAdmin.loginFailedAttempts;
-      throw new GenericError(
-        `Invalid Credentials. ${remaining} attempt(s) remaining before lockout.`,
-        401,
-      );
+      throw new GenericError('Invalid credentials.', 401);
     }
 
     // Successful login — reset failed attempts and lockout
