@@ -9,10 +9,12 @@ import { ConfigModule, ConfigService } from '@charmbooking/common';
 import { SalonWorkerController } from './salon_worker.controller';
 import { PaymentsController } from './payment.controller';
 import * as fs from 'fs';
+import { FileUploadModule } from '../file-upload/file-upload.module';
 
 @Module({
   imports: [
     ConfigModule,
+    FileUploadModule,
     ClientsModule.registerAsync([
       {
         name: 'BOOKING_SERVICE',
