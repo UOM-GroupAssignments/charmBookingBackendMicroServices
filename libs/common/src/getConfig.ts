@@ -1,25 +1,27 @@
 import { config } from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getSecret } from './keyVault';
+
+/**
+ * @deprecated Use ConfigService from ConfigModule instead
+ * This is kept for backward compatibility with scripts that run outside NestJS context
+ */
 
 // Try multiple possible locations for .env
 const possiblePaths = [
-  path.resolve(process.cwd(), '.env'), // Current directory
-  path.resolve(process.cwd(), '../.env'), // Parent directory
-  path.resolve(process.cwd(), '../../.env'), // Grandparent directory
-  path.resolve(__dirname, '../../../.env'), // Relative to this file
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), '../.env'),
+  path.resolve(process.cwd(), '../../.env'),
+  path.resolve(__dirname, '../../../.env'),
 ];
 
-// Find the first path that exists
 const envPath = possiblePaths.find((p) => fs.existsSync(p));
-
 if (envPath) {
   console.log(`Loading .env from: ${envPath}`);
   config({ path: envPath });
 } else {
   console.warn('No .env file found! Using default environment variables.');
-  config(); // Try to load from process.env anyway
+  config();
 }
 
 type DatabaseConfig = {
@@ -31,8 +33,8 @@ type DatabaseConfig = {
 
 type ServiceConfig = {
   apiGateway: { port: number };
-  booking: { port: number };
-  user: { port: number };
+  booking: { host: string; port: number };
+  user: { host: string; port: number };
 };
 
 type JwtConfig = {
@@ -49,103 +51,68 @@ type PayHereConfig = {
   backendUrl: string;
 };
 
+type TlsConfig = {
+  enabled: boolean;
+  certPath: string;
+  keyPath: string;
+  caPath: string;
+};
+
 type AppConfig = {
   database: DatabaseConfig;
   services: ServiceConfig;
   jwt: JwtConfig;
   payHere: PayHereConfig;
+  tls: TlsConfig;
 };
 
 /**
- * Validate that all required configuration values are present
- * Throws an error with details about missing values
+ * Get application configuration from environment variables
+ * @deprecated Use ConfigService from ConfigModule instead
  */
-const validateConfig = (config: AppConfig): void => {
-  const missing: string[] = [];
+export const getConfig = (): AppConfig => {
+  const certBasePath = path.resolve(__dirname, '../../../cert');
+  const tlsEnabled = process.env.TLS_ENABLED === 'true';
 
-  // Check database config
-  if (!config.database.host) missing.push('DB_HOST');
-  if (!config.database.username) missing.push('DB_USERNAME');
-  if (!config.database.password) missing.push('DB_PASSWORD');
-
-  // Check JWT config
-  if (!config.jwt.secret) missing.push('JWT_SECRET');
-  if (!config.jwt.expiration) missing.push('JWT_EXPIRATION');
-
-  // Check PayHere config
-  if (!config.payHere.merchantId) missing.push('PH_MERCHANT_ID');
-  if (!config.payHere.merchantSecret) missing.push('PH_MERCHANT_SECRET');
-  if (!config.payHere.appId) missing.push('PH_APP_ID');
-  if (!config.payHere.appSecret) missing.push('PH_APP_SECRET');
-  if (!config.payHere.frontendUrl) missing.push('FRONTEND_URL');
-  if (!config.payHere.backendUrl) missing.push('BACKEND_URL');
-
-  if (missing.length > 0) {
-    const errorMessage = [
-      '',
-      '╔════════════════════════════════════════════════════════════════╗',
-      '║  CONFIGURATION ERROR: Missing Required Secrets                 ║',
-      '╚════════════════════════════════════════════════════════════════╝',
-      '',
-      'The following required configuration values are missing:',
-      ...missing.map((key) => `  ✗ ${key}`),
-      '',
-      'These secrets must be provided via:',
-      '  1. Azure Key Vault (recommended): Add secrets with names like "DB-HOST"',
-      '  2. Environment variables: Set in .env file or system environment',
-      '',
-      'Please ensure all required secrets are configured before starting the application.',
-      '',
-    ].join('\n');
-
-    throw new Error(errorMessage);
-  }
-};
-
-/**
- * Get application configuration from Azure Key Vault or environment variables
- * Priority: Azure Key Vault > Environment variables
- *
- * @param validate - If true (default), validates that all required secrets are present
- * @returns Application configuration
- * @throws Error if validation is enabled and required secrets are missing
- */
-export const getConfig = (validate: boolean = true): AppConfig => {
   const appConfig: AppConfig = {
     database: {
-      host: getSecret('DB_HOST') || '',
-      port: parseInt(getSecret('DB_PORT') || '3306', 10),
-      username: getSecret('DB_USERNAME') || '',
-      password: getSecret('DB_PASSWORD') || '',
+      host: process.env.DB_HOST || '',
+      port: parseInt(process.env.DB_PORT || '3306', 10),
+      username: process.env.DB_USERNAME || '',
+      password: process.env.DB_PASSWORD || '',
     },
     services: {
       apiGateway: {
-        port: parseInt(getSecret('API_GATEWAY_PORT') || '3000', 10),
+        port: parseInt(process.env.API_GATEWAY_PORT || '3000', 10),
       },
       booking: {
-        port: parseInt(getSecret('BOOKING_SERVICE_PORT') || '3001', 10),
+        host: process.env.BOOKING_SERVICE_HOST || 'localhost',
+        port: parseInt(process.env.BOOKING_SERVICE_PORT || '3001', 10),
       },
       user: {
-        port: parseInt(getSecret('USER_SERVICE_PORT') || '3002', 10),
+        host: process.env.USER_SERVICE_HOST || 'localhost',
+        port: parseInt(process.env.USER_SERVICE_PORT || '3002', 10),
       },
     },
     jwt: {
-      secret: getSecret('JWT_SECRET') || '',
-      expiration: getSecret('JWT_EXPIRATION') || '',
+      secret: process.env.JWT_SECRET || '',
+      expiration: process.env.JWT_EXPIRATION || '',
     },
     payHere: {
-      merchantId: getSecret('PH_MERCHANT_ID') || '',
-      merchantSecret: getSecret('PH_MERCHANT_SECRET') || '',
-      appId: getSecret('PH_APP_ID') || '',
-      appSecret: getSecret('PH_APP_SECRET') || '',
-      frontendUrl: getSecret('FRONTEND_URL') || '',
-      backendUrl: getSecret('BACKEND_URL') || '',
+      merchantId: process.env.PH_MERCHANT_ID || '',
+      merchantSecret: process.env.PH_MERCHANT_SECRET || '',
+      appId: process.env.PH_APP_ID || '',
+      appSecret: process.env.PH_APP_SECRET || '',
+      frontendUrl: process.env.FRONTEND_URL || '',
+      backendUrl: process.env.BACKEND_URL || '',
+    },
+    tls: {
+      enabled: tlsEnabled,
+      certPath: path.join(certBasePath, 'service-cert.pem'),
+      keyPath: path.join(certBasePath, 'service-key.pem'),
+      caPath: path.join(certBasePath, 'ca-cert.pem'),
     },
   };
-
-  if (validate) {
-    validateConfig(appConfig);
-  }
 
   return appConfig;
 };

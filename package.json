@@ -12,6 +12,7 @@
     "build:common": "tsc -b libs/common",
     "build": "pnpm -r run build:common && pnpm -r run build",
     "start": "pnpm --parallel -r run start:dev",
+    "start:api": "pnpm --filter api_gateway run start:dev",
     "start-host": "node start-host-script.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

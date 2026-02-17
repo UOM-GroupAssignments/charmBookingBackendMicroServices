@@ -26,3 +26,7 @@ db/data
 #secrets
 secrets/
 *.pem
+cert/*.pem
+*.key
+*.csr
+*.srl

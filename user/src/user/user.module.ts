@@ -3,19 +3,21 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { getConfig, User, Booking, SalonReview } from '@charmbooking/common';
+import {
+  User,
+  Booking,
+  SalonReview,
+  ConfigService,
+} from '@charmbooking/common';
 
-const config = getConfig();
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Booking, SalonReview]),
     JwtModule.registerAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: () => ({
-        secret: config.jwt.secret,
-        signOptions: { expiresIn: config.jwt.expiration },
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.jwt.secret,
+        signOptions: { expiresIn: configService.jwt.expiration },
       }),
     }),
   ],
