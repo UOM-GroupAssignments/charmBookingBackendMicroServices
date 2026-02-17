@@ -42,7 +42,7 @@ export class UserService {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      dateOfBirth: user.dateOfBirth,
+      dateOfBirth: user.dateOfBirth?.toISOString().split('T')[0],
       phone: user.phone,
     };
     return userDetails;
@@ -64,7 +64,7 @@ export class UserService {
       user.lastName = updateUserDto.lastName;
     if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
     if (updateUserDto.dateOfBirth !== undefined)
-      user.dateOfBirth = updateUserDto.dateOfBirth;
+      user.dateOfBirth = new Date(updateUserDto.dateOfBirth);
     if (updateUserDto.phone !== undefined) user.phone = updateUserDto.phone;
 
     const savedUser = await this.userRepository.save(user);
@@ -74,7 +74,7 @@ export class UserService {
       firstName: savedUser.firstName,
       lastName: savedUser.lastName,
       email: savedUser.email,
-      dateOfBirth: savedUser.dateOfBirth,
+      dateOfBirth: savedUser.dateOfBirth?.toISOString().split('T')[0],
       phone: savedUser.phone,
     };
   }
