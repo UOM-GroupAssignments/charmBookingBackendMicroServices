@@ -2,6 +2,7 @@ import {
   GenericError,
   LoginSuperAdminDto,
   LoginSuperAdminResponseDTO,
+  maskBankAccountNumber,
   Salon,
   SalonDetails,
   SalonDocuments,
@@ -27,7 +28,7 @@ export class SuperAdminService {
     @InjectRepository(SalonDetails)
     private salonDetailsRepository: Repository<SalonDetails>,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async login(
     loginSuperAdminDto: LoginSuperAdminDto,
@@ -75,6 +76,10 @@ export class SuperAdminService {
     if (!salonDetails) {
       throw new GenericError('Salon details not found', 404);
     }
+    // R15 Fix: Mask bank account number before returning to frontend
+    salonDetails.bank_account_number = maskBankAccountNumber(
+      salonDetails.bank_account_number,
+    );
     return salonDetails;
   }
 

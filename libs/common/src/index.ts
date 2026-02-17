@@ -40,3 +40,4 @@ export { calcLatLongDistance } from './helpers/distanceHelpers';
 export * from './enums';
 export * from './entities';
 export * from './dto';
+export { maskBankAccountNumber } from './utils/mask.utils';
