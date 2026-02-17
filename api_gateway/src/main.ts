@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ConfigService, initializeEncryptionKey } from '@charmbooking/common';
 import { RpcToHttpFilter } from './rcp-exception-filter';
 import { RpcErrorInterceptor } from './rcp-interceptor';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +18,16 @@ async function bootstrap() {
     process.exit(1);
   }
 
+  // Get configuration (will validate that all required secrets are present)
+  const config = getConfig();
+  const httpsOptions = {
+    key: fs.readFileSync('./secrets/private-key.pem'),
+    cert: fs.readFileSync('./secrets/public-certificate.pem'),
+  };
+
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions,
+  });
   const port = configService.services.apiGateway.port;
 
   app.useGlobalFilters(new RpcToHttpFilter());

@@ -22,6 +22,10 @@ db/data
 .env
 .env.test
 
+
+#secrets
+secrets/
+*.pem
 cert/*.pem
 *.key
 *.csr
